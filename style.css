@@ -37,6 +37,12 @@ canvas {
   display: block;
   border: 2px solid #222;
   border-radius: 30px; }
+  .ship.peg {
+    width: 20px;
+    height: 20px;
+    background-color: #FF0000;
+    z-index: 1000;
+    border: 0; }
 
 #fire, #battle {
   display: block;

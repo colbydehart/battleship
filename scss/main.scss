@@ -38,6 +38,13 @@ canvas{
   border-radius: 30px;
   &.flip{
   }
+  &.peg{
+    width:20px;
+    height:20px;
+    background-color: #FF0000;
+    z-index:1000;
+    border:0;
+  }
 }
 
 #fire, #battle{
@@ -75,3 +82,4 @@ canvas{
   background-color: rgba(0,0,0,0.4);
   color: #fff;
 }
+

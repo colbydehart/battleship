@@ -10,6 +10,8 @@
   myTurn = true;
 
   $(function(){
+    drawGrid();
+    setStartShips($ships);
     fb.child('players').once('value', function(snap){
       var len = snap.val() ? Object.keys(snap.val()).length : 0;
       if(len){
@@ -31,7 +33,6 @@
       accept: '.ship',
       tolerance: 'touch'
     });
-    drawGrid($ships);
     $ships.dblclick(rotateShip);
     $('#battle').click(startGame);
   });
@@ -45,7 +46,7 @@
     //Also disable ship moving
     playerRef.set(true);
     $('#battle').remove();
-    $('<button>') .attr('id','fire') .text('FIRE')
+    $('<button>').attr('id','fire').text('FIRE')
       .appendTo('body');
     $ships.draggable('disable')
       .off('dblclick');
@@ -70,6 +71,8 @@
       if(ready){
         $('#waiting').fadeOut(400);
         console.log("players ready");
+        fb.child('players').off('value');
+        fb.child('players').set(null);
         play();
       }
     });
@@ -78,44 +81,118 @@
 
   //PLAY
   function play(){
+    var selector=[];
     //Set initial board settings
     if(!myTurn){
       myTurn = true;
       switchSides();
     }else{$ships.hide();}
+    $('canvas').click(setSelector);
     $('#fire').click(sendShot);
-    fb.child('shots').on('child_added',function(snap){
-      //if it is not my turn, process shot at snap.val()
-      //then send message
-    });
-    fb.child('messages').on('child_added', function(snap){
-      //if it is my turn, process whether I got a hit or not,
-      //then delete messages and switch sides
-    });
-    fb.child('messages').on('child_removed', function(snap){
-      //if it is not my turn, my message has been received, so 
-      //switch sides
-    })
+    fb.child('shots').on('child_added', shotsFired);
+    fb.child('messages').on('child_added',messageReceived);
+    fb.child('messages').on('child_removed', messageRemoved);
   }
+
+  function win() {
+    fb = null;
+    $('h1').text('YOU WIN!!!');
+  }
+
+  function lose() {
+    fb = null;
+    $('h1').text('YOU LOSE!!!');
+  }
+
+  function messageRemoved(snap){
+    switchSides();
+  }
+
+  function messageReceived(snap){
+    //if it is my turn, process whether I got a hit or not,
+    //then delete messages and switch sides
+    if (myTurn){
+      var msg = snap.val(),
+          hitOrMiss = msg.indexOf("Hit") !== -1 ? 'hit' : 'miss';
+      BS.grid[selector[0]][selector[1]].guess = hitOrMiss;
+      alert(snap.val());
+      //if i won, win.
+      if(msg.indexOf('Win') !== -1){
+        win();
+      }
+      fb.child('messages').set(null);
+      fb.child('shots').set(null);
+      selector = [];
+    }
+  }
+
+  function shotsFired(snap) {
+    //if it is not my turn, process shot at snap.val()
+    //then send message
+    if(!myTurn){
+      var coord = snap.val(),
+          msg = BS.processShot(coord);
+      //if there is a hit, put a peg on my ship
+      if(msg.indexOf('Hit') !== -1){
+        $('<div>').addClass('ship peg')
+          .css({
+            left: coord[0]*CZ+15 + 'px',
+            top: coord[1]*CZ+15 + 'px' })
+          .appendTo('.container');
+      }
+      fb.child('messages').push(msg);
+      //if the other player has won, you lose.
+      if(msg.indexOf('Win') !== -1){
+        lose();
+      }
+    }
+    
+  }
+  function sendShot(e){
+    if(selector[0] !== undefined){
+      fb.child('shots').push(selector);
+      $('#fire').fadeOut();
+      drawGrid();
+    }
+  }
+
+  function setSelector(e) {
+    //sets the selector of a shot and highlights it, 
+    //if it is the players turn.
+    if (myTurn) {
+      drawGrid();
+      var x = Math.floor(e.offsetX/CZ),
+          y = Math.floor(e.offsetY/CZ);
+      if(!BS.grid[x][y].guess){
+        selector = [x,y];
+        playerCtx.fillStyle = "#80D17B";
+        playerCtx.fillRect(selector[0]*CZ, selector[1]*CZ, CZ, CZ);
+      }
+    }
+  }
+
 
   function switchSides(){
     //My turn
     if(!myTurn){
       console.log("Now it's my turn!");
-      $ships.hide();
+      $('.ship').hide();
       $('#fire').fadeIn(600);
       $playerGrid.css('background-color', '#036');
     }
     //Other Player's turn
     else{
-      $ships.show();
+      $('.ship').show();
       $('#fire').fadeOut(600);
       $playerGrid.css('background-color', '#403');
     }
+    myTurn = !myTurn;
+    drawGrid();
   }
 
   function getShipLocs($ships) {
     var res = [];
+    BS.ships = [];
     for (var i = 0; i < 10; i++) {
       res[i] = [];
       for (var j = 0; j < 10; j++) {
@@ -134,6 +211,12 @@
         return false;
       }
       res[x][y] = name + ' origin';
+      BS.ships.push({
+        name: name,
+        x: x,
+        y: y,
+        orientation: height > width ? 'vertical' : 'horizontal' 
+      });
       var down, right;
       down = right = 1;
       while(--height){
@@ -180,13 +263,29 @@
   }
 
   //DRAW functions
-  function drawGrid($ships){
+  function drawGrid(){
+    playerCtx.clearRect(0,0,GZ,GZ);
+    var color = '#FFF';
     for (var i = 0; i < 10; i++) {
       for (var j = 0; j < 10; j++) {
         playerCtx.strokeStyle = "#FFF";
-        playerCtx.strokeRect(j*CZ, i*CZ, CZ, CZ);
+        playerCtx.strokeRect(i*CZ, j*CZ, CZ, CZ);
+        if(myTurn){
+          //draw my turn grid.
+          if(BS.grid && BS.grid[i][j].guess){
+            color = BS.grid[i][j].guess === 'hit' ? '#F01648' : '#BABABA';
+            playerCtx.fillStyle = color;
+            playerCtx.fillRect(i*CZ, j*CZ, CZ, CZ);
+          }
+        }
+        else{
+          //draw grid for not my turn
+        }
       }
     }
+  }
+
+  function setStartShips($ships){
     for (var i = 0; i < $ships.length; i++) {
       $ships.eq(i).css({
         top: '0',

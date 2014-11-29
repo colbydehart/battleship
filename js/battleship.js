@@ -3,11 +3,35 @@ var BS;
   BS = {
     CZ : 50,
     GZ : 500,
-    carrier: 5,
+    hits: 17,
+    'aircraft-carrier': 5,
     battleship: 4,
-    sub: 3,
+    submarine: 3,
     destroyer: 3,
-    patrol: 2,
+    'patrol-boat': 2,
+    ships : [],
+    processShot : function(shot){
+      var msg = '',
+          loc = BS.grid[shot[0]][shot[1]];
+      if(loc.ship !== null){
+        var shipName = loc.ship.split(' ')[0];
+        msg += "Hit!";
+        BS[shipName]--;
+        BS.hits--;
+        if (BS[shipName] === 0){
+          msg += " You sunk my " + shipName.replace('-',' ') + "!!!";
+          if (BS.hits === 0){
+            msg += " You Win!";
+          }
+        }
+        loc.ship = null;
+      }
+      else{
+        msg += "Miss!";
+      }
+      loc.hit = true;
+      return msg;
+    },
     createGrid : function(cords){
       //creates a grid for the game where each cell has an object that
       //has:
@@ -25,23 +49,18 @@ var BS;
       }
       for (var i = 0; i < 10; i++) {
         for ( var j = 0; j < 10; j++) {
-          result[i][j] = cords[i][j] ? cords[i][j] : null; 
+          result[i][j].ship = cords[i][j] || null; 
         }
       }
       console.log(result);
       BS.grid = result;
-      setShips(cords);
       return true;
     }
-  };
+  }
 
   ///////////////////
   //PRIVATE FUNCTIONS
   ///////////////////
-  function setShips(cords){
-    //sets the ships object which has origins, lengths, and orientations
-    //of ships for canvas drawing.
-  }
 
   return BS;
 }());
