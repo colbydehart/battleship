@@ -38,19 +38,15 @@
   });
 
   function startGame(){
-    if(!BS.createGrid(getShipLocs($ships))){
-      alert('Ships may not overlap!');
-      return false;
-    }
+    BS.createGrid(getShipLocs($ships))
     //Tell server that we are ready and remove battle button. 
-    //Also disable ship moving
+    //also disable ship moving.
     playerRef.set(true);
     $('#battle').remove();
     $('<button>').attr('id','fire').text('FIRE')
       .appendTo('body');
     $ships.draggable('disable')
       .off('dblclick');
-
     //if other player is not ready, append waiting lightbox
     //to the dom
     fb.child('players').once('value', function(snap){
@@ -229,26 +225,14 @@
           x = Math.floor((shipOrigin[0] - origin[0])/50),
           y = Math.floor((shipOrigin[1] - origin[1])/50), 
           name = $(el).attr('id');
-      if (res[x][y] !== 0){
-        res = false;
-        return false;
-      }
       res[x][y] = name + ' origin';
       var down, right;
       down = right = 1;
       while(--height){
-        if(res[x][y+down] !== 0){
-          res = false;
-          return false;
-        }
         res[x][y+down] = name;
         down++;
       }
       while(--width){
-        if(res[x+right][y] !== 0){
-          res = false;
-          return false;
-        }
         res[x+right][y] = name;
         right++;
       }
@@ -283,8 +267,7 @@
         left = +ship.css('left').replace('px',''),
         right = left + ship.height(),
         bottom = top + ship.width(),
-        ori = ship.width() > ship.height(),
-        length = ori ? ship.width() : ship.height();
+        result = true;
     if(right > GZ){
       right = GZ;
       left = GZ - ship.height();
@@ -294,15 +277,17 @@
       top = GZ - ship.width();
     }
     $ships.each(function(i, el){
-      var shipLeft = +$(this).css('left').replace('px',''),
-          shipTop = +$(this).css('top').replace('px', ''),
-          shipRight = shipLeft + $(this).width(),
-          shipBottom = shipTop + $(this).height();
-      if ((top > shipBottom || bottom < shipTop) && (left > shipRight || right < shipLeft)){
-        return false;
+      if($(this).attr('id') !== ship.attr('id')){
+        var shipLeft = +$(this).css('left').replace('px',''),
+            shipTop = +$(this).css('top').replace('px', ''),
+            shipRight = shipLeft + $(this).width(),
+            shipBottom = shipTop + $(this).height();
+        if (!(top >= shipBottom || bottom <= shipTop || left >= shipRight || right <= shipLeft)){
+          result = false;
+        }
       }
     });
-    return true;
+    return result;
   }
 
   //DRAW functions
@@ -337,14 +322,14 @@
           top: origin[1] - CZ,
           left: origin[0] + CZ*i
         })
-        .appendTo('.container');
+        .appendTo('body');
       $('<span>').addClass('cord')
         .html('&#' + (i+65) + ';')
         .css({
           top: origin[1] + CZ*i,
           left: origin[0] - CZ
         })
-        .appendTo('.container');
+        .appendTo('body');
     }
   }
 

@@ -2,7 +2,7 @@ gulp = require 'gulp'
 neat = require 'node-neat'
 $ = do require 'gulp-load-plugins'
 paths =
-  scss: './scss/*.scss'
+  scss: 'scss/*.scss'
   test: './spec/*.js'
 #SASS
 gulp.task 'sass', (cb) ->
