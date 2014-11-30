@@ -18,6 +18,7 @@ h1 {
   text-align: center;
   font-size: 8rem;
   margin: 0;
+  margin-bottom: 30px;
 }
 
 canvas{
@@ -26,7 +27,15 @@ canvas{
   width: 500px;
   height: 500px;
   display: inline-block;
-  margin-left: calc(50% - 250px)
+}
+
+span{
+  display: block;
+  width:50px;
+  height:50px;
+  position: fixed;
+  font-size: 2rem;
+  text-align: center;
 }
 
 .ship{
@@ -81,5 +90,17 @@ canvas{
   height: 100%;
   background-color: rgba(0,0,0,0.4);
   color: #fff;
+}
+
+.alert{
+  display: none;
+  position: fixed;
+  top:0;
+  right:0;
+  background-color: #aaa;
+  font-size:3rem;
+  padding:35px;
+  border-radius: 10px;
+  &.hit{background-color:#ee4444;}
 }
 

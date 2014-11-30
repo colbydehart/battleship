@@ -9,7 +9,6 @@ var BS;
     submarine: 3,
     destroyer: 3,
     'patrol-boat': 2,
-    ships : [],
     processShot : function(shot){
       var msg = '',
           loc = BS.grid[shot[0]][shot[1]];
@@ -52,7 +51,6 @@ var BS;
           result[i][j].ship = cords[i][j] || null; 
         }
       }
-      console.log(result);
       BS.grid = result;
       return true;
     }

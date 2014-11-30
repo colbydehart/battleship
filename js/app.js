@@ -95,12 +95,15 @@
   }
 
   function win() {
+    fb.set(null);
     fb = null;
+    $('canvas').off('click');
     $('h1').text('YOU WIN!!!');
   }
 
   function lose() {
     fb = null;
+    $('canvas').off('click');
     $('h1').text('YOU LOSE!!!');
   }
 
@@ -115,7 +118,7 @@
       var msg = snap.val(),
           hitOrMiss = msg.indexOf("Hit") !== -1 ? 'hit' : 'miss';
       BS.grid[selector[0]][selector[1]].guess = hitOrMiss;
-      alert(snap.val());
+      alertMessage(snap.val());
       //if i won, win.
       if(msg.indexOf('Win') !== -1){
         win();
@@ -124,6 +127,19 @@
       fb.child('shots').set(null);
       selector = [];
     }
+  }
+
+  function alertMessage(msg) {
+    var $message = $('<div>')
+      .addClass('alert').text(msg);
+    if(msg.indexOf("Hit") !== -1)
+      {$message.addClass('hit');}
+    $message.appendTo('body')
+      .fadeIn(400, function(){
+        setTimeout(function(){
+          $message.fadeOut();
+        }, 2000);
+      });
   }
 
   function shotsFired(snap) {
@@ -145,6 +161,13 @@
       if(msg.indexOf('Win') !== -1){
         lose();
       }
+      msg = msg
+        .replace('You', 'They')
+        .replace('my', 'your')
+        .replace('Hit','They got a hit')
+        .replace('Miss', 'They missed');
+
+      alertMessage(msg);
     }
     
   }
@@ -211,12 +234,6 @@
         return false;
       }
       res[x][y] = name + ' origin';
-      BS.ships.push({
-        name: name,
-        x: x,
-        y: y,
-        orientation: height > width ? 'vertical' : 'horizontal' 
-      });
       var down, right;
       down = right = 1;
       while(--height){
@@ -241,25 +258,51 @@
 
   function rotateShip(e){
     var $ship = $(e.target);
-    $ship.toggleClass('flip');
-
-    var top = +$ship.css('top').replace('px',''),
-        left = +$ship.css('left').replace('px',''),
-        flipped = $ship.hasClass('flip');
-
-    $ship.css({
-      top:flipped ? top+5 : top-5,
-      left:flipped ? left-5 : left+5
-    });
-
-    if(left + $ship.width() > GZ){
-      $ship.css({left: GZ - $ship.width() - 2.5 });
-    }
-
-    if(top + $ship.height() > GZ){
-      $ship.css({top: GZ - $ship.height() - 2.5 });
+    if(flippable($ship)){
+      $ship.toggleClass('flip');
+      var top = +$ship.css('top').replace('px',''),
+          left = +$ship.css('left').replace('px',''),
+          flipped = $ship.hasClass('flip');
+      $ship.css({
+        top:flipped ? top+5 : top-5,
+        left:flipped ? left-5 : left+5
+      });
+      if(left + $ship.width() > GZ){
+        $ship.css({left: GZ - $ship.width() - 2.5 });
+      }
+      if(top + $ship.height() > GZ){
+        $ship.css({top: GZ - $ship.height() - 2.5 });
+      }
     }
     return false;
+  }
+
+  function flippable(ship) {
+    //orientation, true = horizontal; false = vertical
+    var top = +ship.css('top').replace('px',''),
+        left = +ship.css('left').replace('px',''),
+        right = left + ship.height(),
+        bottom = top + ship.width(),
+        ori = ship.width() > ship.height(),
+        length = ori ? ship.width() : ship.height();
+    if(right > GZ){
+      right = GZ;
+      left = GZ - ship.height();
+    }
+    if(bottom > GZ){
+      bottom = GZ;
+      top = GZ - ship.width();
+    }
+    $ships.each(function(i, el){
+      var shipLeft = +$(this).css('left').replace('px',''),
+          shipTop = +$(this).css('top').replace('px', ''),
+          shipRight = shipLeft + $(this).width(),
+          shipBottom = shipTop + $(this).height();
+      if ((top > shipBottom || bottom < shipTop) && (left > shipRight || right < shipLeft)){
+        return false;
+      }
+    });
+    return true;
   }
 
   //DRAW functions
@@ -270,16 +313,11 @@
       for (var j = 0; j < 10; j++) {
         playerCtx.strokeStyle = "#FFF";
         playerCtx.strokeRect(i*CZ, j*CZ, CZ, CZ);
-        if(myTurn){
-          //draw my turn grid.
-          if(BS.grid && BS.grid[i][j].guess){
-            color = BS.grid[i][j].guess === 'hit' ? '#F01648' : '#BABABA';
-            playerCtx.fillStyle = color;
-            playerCtx.fillRect(i*CZ, j*CZ, CZ, CZ);
-          }
-        }
-        else{
-          //draw grid for not my turn
+        if(myTurn && BS.grid && BS.grid[i][j].guess){
+          color = BS.grid[i][j].guess === 'hit' ?
+            '#F01648' : '#BABABA';
+          playerCtx.fillStyle = color;
+          playerCtx.fillRect(i*CZ, j*CZ, CZ, CZ);
         }
       }
     }
@@ -291,6 +329,22 @@
         top: '0',
         left: 5+CZ*i + 'px'
       });
+    }
+    for (var i = 0; i < 10; i++) {
+      $('<span>').addClass('cord')
+        .text(''+i)
+        .css({
+          top: origin[1] - CZ,
+          left: origin[0] + CZ*i
+        })
+        .appendTo('.container');
+      $('<span>').addClass('cord')
+        .html('&#' + (i+65) + ';')
+        .css({
+          top: origin[1] + CZ*i,
+          left: origin[0] - CZ
+        })
+        .appendTo('.container');
     }
   }
 
