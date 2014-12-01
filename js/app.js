@@ -27,18 +27,16 @@
     $ships.draggable({
       grid:[50,50],
       containment: '#playerGrid',
-      revert: 'valid',
-    });
-    $ships.droppable({
-      accept: '.ship',
-      tolerance: 'touch'
+      revert: function(){
+        return !willCollide(this);
+      }
     });
     $ships.dblclick(rotateShip);
     $('#battle').click(startGame);
   });
 
   function startGame(){
-    BS.createGrid(getShipLocs($ships))
+    BS.createGrid(getShipLocs($ships));
     //Tell server that we are ready and remove battle button. 
     //also disable ship moving.
     playerRef.set(true);
@@ -242,7 +240,7 @@
 
   function rotateShip(e){
     var $ship = $(e.target);
-    if(flippable($ship)){
+    if(willCollide($ship, true)){
       $ship.toggleClass('flip');
       var top = +$ship.css('top').replace('px',''),
           left = +$ship.css('left').replace('px',''),
@@ -261,20 +259,27 @@
     return false;
   }
 
-  function flippable(ship) {
-    //orientation, true = horizontal; false = vertical
+  function willCollide(ship, flip) {
     var top = +ship.css('top').replace('px',''),
         left = +ship.css('left').replace('px',''),
-        right = left + ship.height(),
-        bottom = top + ship.width(),
+        right = flip ?
+          left + ship.height() :
+          left + ship.width(),
+        bottom = flip ?
+          top + ship.width() :
+          top + ship.height(),
         result = true;
     if(right > GZ){
       right = GZ;
-      left = GZ - ship.height();
+      left = flip ?
+        GZ - ship.height() :
+        GZ - ship.width();
     }
     if(bottom > GZ){
       bottom = GZ;
-      top = GZ - ship.width();
+      top = flip ?
+        GZ - ship.width() :
+        GZ - ship.height();
     }
     $ships.each(function(i, el){
       if($(this).attr('id') !== ship.attr('id')){
